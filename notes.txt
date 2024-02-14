@@ -1,0 +1,5 @@
+- Each pool contract will have two relationships with an underlying token.
+  1 - Each Pool contract will act as a vault when bridging.
+  2 - Each pool will be a synthetic representation of the underlying token. 
+      
+    Deposit WETH on SRC pool -> mint synthetic WETH on destination Pool
