@@ -3,7 +3,7 @@ pragma solidity 0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import {Utils} from "../Utils.sol";
+import {Utils} from "./Utils.sol";
 
 error OnlyBridgeRouter();
 
@@ -11,13 +11,12 @@ event BridgeNative(address bridger, address pool, uint256 amount, uint256 feeAmo
 event FeesCollected(address nativeToken, uint256 amount);
 
 contract Pool is ERC20, Ownable {
-    uint48 constant HUNDRED_PERCENT = 100_0000;
-    uint48 public protocolFee;
-    uint8 immutable decimals_; 
-    address public immutable nativeAddress;
-    address public bridgeRouterAddress;
-    uint256 public amountbridged;
+    uint48  constant HUNDRED_PERCENT = 100_0000;
+    uint256 public amountBridged;
     uint256 public feesCollected;
+    uint48  public protocolFee;
+    uint8 private immutable decimals_; 
+    address public immutable nativeAddress;
 
     struct NativeBridgeMessage {
         address sender;
@@ -25,26 +24,20 @@ contract Pool is ERC20, Ownable {
         uint256 destinationId;
     }
 
-    modifier onlyBridgeRouter() {
-        if (msg.sender != bridgeRouterAddress) revert OnlyBridgeRouter();
-        _;
-    }
-
     constructor(
-        address _owner, 
         address _nativeAddress,
-        address _bridgeRouterAddress,
         string memory _syntheticName, 
         string memory _syntheticSymbol,
-        uint8 _decimals
+        uint8 _decimals,
+        uint48 _protocolFee
     ) 
-        ERC20(_syntheticName, _syntheticSymbol) Ownable(_owner) {
+        ERC20(_syntheticName, _syntheticSymbol) Ownable(msg.sender) {
             decimals_ = _decimals;
             nativeAddress = _nativeAddress;
-            bridgeRouterAddress = _bridgeRouterAddress;
+            protocolFee = _protocolFee;
         } 
 
-    function bridgeNative(NativeBridgeMessage calldata _message) external onlyBridgeRouter {
+    function bridgeNative(NativeBridgeMessage calldata _message) external {
         (uint256 amountReceived, uint256 protocolFeeAmount) = Utils.transferIn(
             nativeAddress,
             _message.sender,
@@ -53,7 +46,7 @@ contract Pool is ERC20, Ownable {
             protocolFee
         );
 
-        amountbridged += amountReceived - protocolFeeAmount;
+        amountBridged += amountReceived - protocolFeeAmount;
         feesCollected += protocolFeeAmount;
 
         emit BridgeNative(
