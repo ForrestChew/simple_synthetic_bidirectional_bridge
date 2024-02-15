@@ -20,4 +20,13 @@ library Utils {
             amountReceived = token.balanceOf(_to) - initialBalance;
             protocolFeeAmount = amountReceived * _fee / HUNDRED_PERCENT;
     }
+
+    function transferOut(
+        address _token, 
+        address _to, 
+        uint256 _amount
+        ) external {
+            IERC20 token = IERC20(_token);
+            token.transfer(_to, _amount);
+    }
 }

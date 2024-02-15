@@ -8,15 +8,16 @@ import {Utils} from "../Utils.sol";
 error OnlyBridgeRouter();
 
 event BridgeNative(address bridger, address pool, uint256 amount, uint256 feeAmount, uint256 destinationId);
+event FeesCollected(address nativeToken, uint256 amount);
 
 contract Pool is ERC20, Ownable {
     uint48 constant HUNDRED_PERCENT = 100_0000;
-
-    uint8 immutable decimals_; 
     uint48 public protocolFee;
+    uint8 immutable decimals_; 
     address public immutable nativeAddress;
     address public bridgeRouterAddress;
     uint256 public amountbridged;
+    uint256 public feesCollected;
 
     struct NativeBridgeMessage {
         address sender;
@@ -52,6 +53,9 @@ contract Pool is ERC20, Ownable {
             protocolFee
         );
 
+        amountbridged += amountReceived - protocolFeeAmount;
+        feesCollected += protocolFeeAmount;
+
         emit BridgeNative(
             _message.sender, 
             address(this), 
@@ -68,6 +72,16 @@ contract Pool is ERC20, Ownable {
     /// @dev - Can only be called by offchain script when bridger locks native tokens on source.
     function mintSynthetic(uint256 _amount) external onlyOwner {
 
+    }
+
+    function collectFees() external onlyOwner {
+        uint256 feesAmount = feesCollected;
+        
+        feesCollected = 0;
+
+        Utils.transferOut(nativeAddress, owner(), feesAmount);
+
+        emit FeesCollected(nativeAddress, feesAmount);
     }
 
     function _destroySynthetic(uint256 _amount) private {
